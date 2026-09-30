@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Prompt Automator - Settings & Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body class="dark-theme">
+  <div class="options-container">
+    <header class="options-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </div>
+        <div>
+          <h1>Flow Prompt Automator</h1>
+          <p class="subtitle">Global Settings, Flow Selectors & Integration Configuration</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="openFlowTabBtn" class="btn btn-outline">Launch Google Flow</button>
+      </div>
+    </header>
+
+    <div class="options-grid">
+      <!-- Automation Parameters -->
+      <section class="card">
+        <h2 class="card-title">Automation Timing & Execution</h2>
+        <p class="card-desc">Fine-tune submission cadence, timeout thresholds, and completion detection.</p>
+
+        <div class="form-group">
+          <label for="submissionDelaySec">Submission Delay (Seconds)</label>
+          <span class="hint">Minimum breathing time between prompt submissions to prevent rate-limiting.</span>
+          <input type="number" id="submissionDelaySec" class="input-text" min="0" max="600" value="10">
+        </div>
+
+        <div class="form-group">
+          <label for="maxWaitTimeSec">Maximum Generation Timeout (Seconds)</label>
+          <span class="hint">How long the automator monitors Flow before continuing or logging a timeout.</span>
+          <input type="number" id="maxWaitTimeSec" class="input-text" min="10" max="1800" value="180">
+        </div>
+
+        <div class="form-group">
+          <label for="postGenerationDelaySec">Post-Generation Delay (Seconds)</label>
+          <span class="hint">Additional delay after video/media completion to ensure DOM stabilization.</span>
+          <input type="number" id="postGenerationDelaySec" class="input-text" min="0" max="300" value="5">
+        </div>
+
+        <div class="form-group">
+          <label for="automationMode">Detection Mode</label>
+          <span class="hint">Choose between reactive DOM observation and fixed-time wait loops.</span>
+          <select id="automationMode" class="select-text">
+            <option value="SMART_DETECTION">Smart Detection (Monitors generation state dynamically)</option>
+            <option value="FIXED_DELAY">Fixed Delay (Strictly waits configured duration)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Downloads & Media -->
+      <section class="card">
+        <h2 class="card-title">Automated Media Downloads</h2>
+        <p class="card-desc">Automatically download generated videos or images upon generation completion.</p>
+
+        <div class="form-check">
+          <input type="checkbox" id="autoDownload" class="checkbox">
+          <label for="autoDownload">Enable Automatic Downloads</label>
+        </div>
+
+        <div class="form-group mt-2">
+          <label for="downloadNamingPattern">File Naming Template</label>
+          <span class="hint">Tokens: {index}, {timestamp}, {date}</span>
+          <input type="text" id="downloadNamingPattern" class="input-text" value="FlowPrompt_{index}_{timestamp}">
+        </div>
+      </section>
+
+      <!-- Anthropic API -->
+      <section class="card">
+        <div class="card-header-flex">
+          <h2 class="card-title">Anthropic Claude AI (Optional)</h2>
+          <span class="badge badge-purple">AI Tools</span>
+        </div>
+        <p class="card-desc">
+          Enables AI prompt cleanup, intelligent splitting, style enhancements, and custom prompt transformations.
+          Your API key is stored securely in local browser storage and never shared.
+        </p>
+
+        <div class="form-group">
+          <label for="anthropicApiKey">Anthropic API Key</label>
+          <span class="hint">Enter your Anthropic Claude API key (sk-ant-...)</span>
+          <div class="input-with-button">
+            <input type="password" id="anthropicApiKey" class="input-text" placeholder="sk-ant-api03-...">
+            <button id="testApiKeyBtn" class="btn btn-secondary">Test Connection</button>
+          </div>
+          <span id="apiKeyTestStatus" class="test-status hidden"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="anthropicModel">Claude Model</label>
+          <select id="anthropicModel" class="select-text">
+            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Recommended)</option>
+            <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Flow URL & Debug -->
+      <section class="card">
+        <h2 class="card-title">Google Flow Environment & Diagnostics</h2>
+        <p class="card-desc">Configure custom internal domains and diagnostic logging options.</p>
+
+        <div class="form-group">
+          <label for="customFlowUrlPattern">Custom Flow Domain / URL Pattern</label>
+          <span class="hint">If accessing Flow through a custom Google Labs URL or proxy.</span>
+          <input type="text" id="customFlowUrlPattern" class="input-text" placeholder="e.g. labs.google/flow or internal-flow.corp">
+        </div>
+
+        <div class="form-check">
+          <input type="checkbox" id="debugMode" class="checkbox">
+          <label for="debugMode">Enable Verbose Debug Console Logs</label>
+        </div>
+      </section>
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="options-footer">
+      <span id="saveStatusMsg" class="save-status hidden">✓ Settings saved successfully</span>
+      <button id="saveAllOptionsBtn" class="btn btn-primary btn-lg">Save Settings</button>
+    </div>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

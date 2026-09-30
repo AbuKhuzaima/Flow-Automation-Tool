@@ -1,0 +1,30 @@
+{
+  "name": "flow-prompt-automator",
+  "version": "1.0.1",
+  "description": "Production-grade Chrome Extension (Manifest V3) for automated prompt submission, monitoring, and downloading on Google Flow.",
+  "main": "dist/background/service-worker.js",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "test": "node run-tests.js"
+  },
+  "keywords": [
+    "google-flow",
+    "chrome-extension",
+    "manifest-v3",
+    "automation",
+    "prompt-engineering",
+    "batch-processing",
+    "generative-ai",
+    "anthropic-claude",
+    "devtools-protocol"
+  ],
+  "author": "Ado Abdulaziz Yusuf <abdulazizado125@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "@types/node": "^20.17.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  }
+}

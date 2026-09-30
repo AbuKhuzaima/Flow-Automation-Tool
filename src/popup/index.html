@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Prompt Automator</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="dark-theme">
+  <div id="app" class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Flow Automator</h1>
+          <span class="version-tag">v1.0</span>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div id="connectionPill" class="status-pill disconnected" title="Target Flow Connection">
+          <span class="status-dot"></span>
+          <span id="connectionText" class="status-text">FLOW NOT DETECTED</span>
+        </div>
+        <button id="pickActiveTabBtn" class="btn btn-xs btn-secondary" title="Lock automation onto your currently viewed tab">
+          Target Active Tab
+        </button>
+        <button id="openSidePanelBtn" class="btn btn-xs btn-outline" title="Dock into Chrome Side Panel (stays open when clicking webpage!)">
+          Side Panel ◨
+        </button>
+        <button id="popoutWindowBtn" class="btn btn-xs btn-outline" title="Open in permanent floating window (never closes on click!)">
+          Pop out ↗
+        </button>
+        <button id="openFlowBtn" class="btn btn-xs btn-outline" title="Open Google Flow in a new tab">
+          Open Flow
+        </button>
+      </div>
+    </header>
+
+    <!-- Keep Open Tip Banner -->
+    <div id="keepOpenBanner" class="keep-open-banner">
+      <span>💡 <strong>Keep open:</strong> Use <strong>Side Panel ◨</strong> or <strong>Pop out ↗</strong> so the dashboard never closes when clicking the page!</span>
+      <button id="dismissBannerBtn" class="btn-dismiss" title="Dismiss">✕</button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="tab-queue" role="tab">Queue</button>
+      <button class="nav-tab" data-tab="tab-progress" role="tab">Progress</button>
+      <button class="nav-tab" data-tab="tab-ai" role="tab">AI Tools</button>
+      <button class="nav-tab" data-tab="tab-settings" role="tab">Settings</button>
+      <button class="nav-tab" data-tab="tab-logs" role="tab">Logs</button>
+    </nav>
+
+    <!-- Tab 1: Queue -->
+    <main id="tab-queue" class="tab-pane active">
+      <!-- Input Methods Section -->
+      <section class="card input-section">
+        <div class="section-header">
+          <span class="section-title">Add Prompts</span>
+          <div class="method-toggles">
+            <button id="togglePasteBtn" class="btn-toggle active">Paste Text</button>
+            <button id="toggleUploadBtn" class="btn-toggle">Upload .TXT</button>
+          </div>
+        </div>
+
+        <!-- Method A: Paste Text -->
+        <div id="pasteMethodContainer" class="method-body">
+          <textarea
+            id="promptInputArea"
+            class="input-textarea"
+            placeholder="Paste your prompts here...&#10;&#10;Separate individual prompts with one or more blank lines.&#10;&#10;Prompt 1: Cinematic drone shot over futuristic Tokyo at twilight...&#10;&#10;Prompt 2: Close-up portrait of a neon cyborg in heavy rain..."
+            rows="5"
+          ></textarea>
+          <div class="input-actions">
+            <div id="inputCountPreview" class="badge-hint">0 prompts detected</div>
+            <div class="action-buttons">
+              <button id="clearInputBtn" class="btn btn-sm btn-ghost">Clear</button>
+              <button id="appendPasteBtn" class="btn btn-sm btn-secondary">Append to Queue</button>
+              <button id="replacePasteBtn" class="btn btn-sm btn-primary">Replace Queue</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Method B: Upload TXT -->
+        <div id="uploadMethodContainer" class="method-body hidden">
+          <div id="dropZone" class="drop-zone">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="drop-title">Drop your <strong>.TXT</strong> file here</p>
+            <p class="drop-sub">or click to browse from your computer</p>
+            <input type="file" id="fileInput" accept=".txt" class="file-input-hidden">
+          </div>
+          <div id="fileUploadResult" class="file-upload-result hidden">
+            <div class="file-info">
+              <span id="fileNameDisplay" class="file-name">prompts.txt</span>
+              <span id="fileCountDisplay" class="file-count">0 prompts detected</span>
+            </div>
+            <div class="action-buttons">
+              <button id="appendUploadBtn" class="btn btn-sm btn-secondary">Append to Queue</button>
+              <button id="replaceUploadBtn" class="btn btn-sm btn-primary">Replace Queue</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Queue Controls Toolbar -->
+      <section class="queue-toolbar">
+        <div class="primary-controls">
+          <button id="startBtn" class="btn btn-success" title="Start submitting prompts into Flow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Start
+          </button>
+          <button id="pauseBtn" class="btn btn-warning hidden" title="Pause the automation loop">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            Pause
+          </button>
+          <button id="resumeBtn" class="btn btn-warning hidden" title="Resume automation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Resume
+          </button>
+          <button id="stopBtn" class="btn btn-danger" title="Stop automation cleanly">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="5" y="5" width="14" height="14"></rect>
+            </svg>
+            Stop
+          </button>
+        </div>
+
+        <div class="secondary-controls">
+          <button id="skipBtn" class="btn btn-sm btn-outline" title="Skip current prompt">Skip</button>
+          <button id="retryFailedBtn" class="btn btn-sm btn-outline" title="Retry all failed prompts">Retry Failed</button>
+          <button id="resetProgressBtn" class="btn btn-sm btn-outline" title="Reset all prompts back to Pending">Reset</button>
+          <button id="clearQueueBtn" class="btn btn-sm btn-ghost btn-danger-text" title="Clear all prompts from queue">Clear</button>
+        </div>
+      </section>
+
+      <!-- Active Queue List -->
+      <section class="queue-container">
+        <div class="queue-header">
+          <span class="queue-title">Prompt Queue (<span id="queueCount">0</span>)</span>
+          <div class="queue-filter">
+            <select id="statusFilter" class="select-sm">
+              <option value="ALL">All Statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="GENERATING">Generating</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="FAILED">Failed</option>
+              <option value="SKIPPED">Skipped</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="queueList" class="queue-list">
+          <!-- Rendered dynamically -->
+          <div class="empty-queue-placeholder">
+            <p>Queue is empty.</p>
+            <span>Paste prompts above or upload a .txt file to begin.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tab 2: Progress -->
+    <main id="tab-progress" class="tab-pane">
+      <!-- High Level Metrics -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">TOTAL</span>
+          <span id="statTotal" class="stat-value">0</span>
+        </div>
+        <div class="stat-card stat-completed">
+          <span class="stat-label">COMPLETED</span>
+          <span id="statCompleted" class="stat-value">0</span>
+        </div>
+        <div class="stat-card stat-processing">
+          <span class="stat-label">PROCESSING</span>
+          <span id="statProcessing" class="stat-value">0</span>
+        </div>
+        <div class="stat-card stat-failed">
+          <span class="stat-label">FAILED</span>
+          <span id="statFailed" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">REMAINING</span>
+          <span id="statRemaining" class="stat-value">0</span>
+        </div>
+      </section>
+
+      <!-- Visual Progress Bar -->
+      <section class="card progress-section">
+        <div class="progress-bar-header">
+          <span class="progress-title">Overall Progress</span>
+          <span id="progressPercent" class="progress-percent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div id="progressBarFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-footer">
+          <span class="time-estimate-label">Estimated remaining:</span>
+          <span id="estimatedRemainingText" class="time-estimate-value">--:--</span>
+        </div>
+      </section>
+
+      <!-- Current Prompt Execution Status -->
+      <section class="card active-prompt-card">
+        <div class="active-prompt-header">
+          <span class="active-prompt-label">Current Prompt: <strong id="currentPromptIndexDisplay">-- / --</strong></span>
+          <span id="currentStatusBadge" class="badge badge-idle">IDLE</span>
+        </div>
+        <div id="currentStateActivityText" class="current-state-activity">No automation running</div>
+        <div id="currentPromptTextPreview" class="current-prompt-text">
+          Queue is currently idle. Press Start to begin submitting prompts.
+        </div>
+        <div id="lastErrorAlert" class="alert alert-error hidden">
+          <span class="alert-icon">⚠️</span>
+          <span id="lastErrorText" class="alert-msg"></span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tab 3: AI Tools (Anthropic Claude) -->
+    <main id="tab-ai" class="tab-pane">
+      <section class="card">
+        <div class="ai-banner">
+          <div class="ai-title">Claude Prompt Suite</div>
+          <span class="badge badge-purple">Optional</span>
+        </div>
+        <p class="ai-desc">
+          Enhance, split, clean, or transform your prompts using Anthropic Claude before running automation.
+        </p>
+
+        <div class="form-group">
+          <label for="aiToolInput">Input Text to Process</label>
+          <textarea id="aiToolInput" class="input-textarea" rows="4" placeholder="Enter rough prompt ideas or messy text..."></textarea>
+        </div>
+
+        <div class="ai-actions-grid">
+          <button id="aiCleanupBtn" class="btn btn-outline" title="Fix typos and formatting while keeping meaning">
+            ✨ Cleanup & Format
+          </button>
+          <button id="aiSplitBtn" class="btn btn-outline" title="Intelligently detect separate prompts from raw text">
+            ✂️ Split Into Prompts
+          </button>
+          <button id="aiEnhanceBtn" class="btn btn-outline" title="Add cinematic details, lighting, and camera styles">
+            🎬 Cinematic Enhance
+          </button>
+          <button id="aiValidateBtn" class="btn btn-outline" title="Check prompt quality and completeness">
+            🔍 Validate Quality
+          </button>
+        </div>
+
+        <div class="form-group mt-3">
+          <label for="aiTransformInstruction">Custom Transformation Instruction</label>
+          <div class="input-with-button">
+            <input id="aiTransformInstruction" type="text" class="input-text" placeholder="e.g. Convert to 4k macro slow-motion nature scenes">
+            <button id="aiTransformBtn" class="btn btn-secondary">Transform</button>
+          </div>
+        </div>
+
+        <div id="aiLoadingIndicator" class="ai-loading hidden">
+          <span class="spinner"></span>
+          <span>Contacting Anthropic Claude...</span>
+        </div>
+
+        <div id="aiResultContainer" class="ai-result-box hidden">
+          <div class="result-header">
+            <span>Result (<span id="aiResultCount">0</span> prompts)</span>
+            <button id="aiInsertQueueBtn" class="btn btn-xs btn-success">Add Result to Queue</button>
+          </div>
+          <div id="aiResultContent" class="result-content"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tab 4: Settings -->
+    <main id="tab-settings" class="tab-pane">
+      <section class="card">
+        <h2 class="section-title">Automation Timing & Behavior</h2>
+
+        <div class="form-group">
+          <label for="settingSubmissionDelay">Submission Delay (seconds)</label>
+          <div class="input-hint">Delay between consecutive prompts</div>
+          <input type="number" id="settingSubmissionDelay" class="input-text" min="0" max="600" value="10">
+        </div>
+
+        <div class="form-group">
+          <label for="settingMaxWaitTime">Maximum Wait Time (seconds)</label>
+          <div class="input-hint">Timeout waiting for generation to complete</div>
+          <input type="number" id="settingMaxWaitTime" class="input-text" min="10" max="1800" value="180">
+        </div>
+
+        <div class="form-group">
+          <label for="settingPostGenDelay">Post-Generation Delay (seconds)</label>
+          <div class="input-hint">Pause after generation finishes before next prompt</div>
+          <input type="number" id="settingPostGenDelay" class="input-text" min="0" max="300" value="5">
+        </div>
+
+        <div class="form-group">
+          <label for="settingAutomationMode">Automation Mode</label>
+          <select id="settingAutomationMode" class="select-text">
+            <option value="SMART_DETECTION">Smart Detection (Monitors Flow DOM completion)</option>
+            <option value="FIXED_DELAY">Fixed Delay (Waits full wait time)</option>
+          </select>
+        </div>
+
+        <div class="form-divider"></div>
+        <h2 class="section-title">Result Downloads</h2>
+
+        <div class="form-check">
+          <input type="checkbox" id="settingAutoDownload" class="checkbox">
+          <label for="settingAutoDownload">Automatically download generated results</label>
+        </div>
+
+        <div class="form-group mt-2">
+          <label for="settingDownloadPattern">Download Naming Pattern</label>
+          <div class="input-hint">Available: {index}, {timestamp}, {date}</div>
+          <input type="text" id="settingDownloadPattern" class="input-text" value="FlowPrompt_{index}_{timestamp}">
+        </div>
+
+        <div class="form-divider"></div>
+        <h2 class="section-title">Anthropic API (Optional)</h2>
+
+        <div class="form-group">
+          <label for="settingAnthropicApiKey">Anthropic API Key</label>
+          <div class="input-hint">Stored strictly locally in chrome.storage</div>
+          <input type="password" id="settingAnthropicApiKey" class="input-text" placeholder="sk-ant-...">
+        </div>
+
+        <div class="form-group">
+          <label for="settingAnthropicModel">Claude Model</label>
+          <select id="settingAnthropicModel" class="select-text">
+            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Recommended)</option>
+            <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Fastest)</option>
+          </select>
+        </div>
+
+        <div class="form-divider"></div>
+        <h2 class="section-title">Advanced & Debug</h2>
+
+        <div class="form-group">
+          <label for="settingCustomUrl">Custom Flow URL Pattern (Optional)</label>
+          <div class="input-hint">Regex or domain substring if using custom Google internal URL</div>
+          <input type="text" id="settingCustomUrl" class="input-text" placeholder="e.g. labs.google/flow">
+        </div>
+
+        <div class="form-check">
+          <input type="checkbox" id="settingDebugMode" class="checkbox">
+          <label for="settingDebugMode">Enable Verbose Debug Mode</label>
+        </div>
+
+        <div class="settings-actions">
+          <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
+          <span id="settingsSavedBadge" class="saved-badge hidden">✓ Saved</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tab 5: Logs -->
+    <main id="tab-logs" class="tab-pane">
+      <section class="card logs-section">
+        <div class="logs-header">
+          <span class="section-title">Activity Logs</span>
+          <div class="logs-actions">
+            <button id="copyLogsBtn" class="btn btn-xs btn-outline">Copy Logs</button>
+            <button id="clearLogsBtn" class="btn btn-xs btn-ghost">Clear</button>
+          </div>
+        </div>
+        <div id="logsConsole" class="logs-console">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Confirmation Modal Dialog -->
+    <div id="confirmModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <h3 id="modalTitle" class="modal-title">Confirm Action</h3>
+        <p id="modalMessage" class="modal-message">Are you sure you want to proceed?</p>
+        <div class="modal-buttons">
+          <button id="modalCancelBtn" class="btn btn-outline">Cancel</button>
+          <button id="modalConfirmBtn" class="btn btn-danger">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
